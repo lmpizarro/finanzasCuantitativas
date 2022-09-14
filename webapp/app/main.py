@@ -33,7 +33,7 @@ class Result(BaseModel):
     model: Model
 
 @app.get("/price/options/european", tags=['Europeans'])
-async def root(params: OptionParameters = Depends()):
+async def european(params: OptionParameters = Depends()):
 
     if params.model == Model.BS:
         price = opcion_europea_bs(tipo=params.type,
@@ -76,8 +76,9 @@ async def root(params: OptionParameters = Depends()):
 
     return Result(price=price, model=params.model)
 
+
 @app.get("/price/options/american", tags=['Americans'])
-async def root(params: OptionParameters = Depends()):
+async def american(params: OptionParameters = Depends()):
 
     if params.model == Model.BIN:
          price = opcion_americana_bin(tipo=params.type,
@@ -100,5 +101,17 @@ async def root(params: OptionParameters = Depends()):
     else:
         raise HTTPException(status_code=404, detail="Not Implemented")
 
-
     return Result(price=price, model=params.model)
+
+class VolatilityParameters(OptionParameters):
+    market_price: float = 100
+    
+
+
+@app.get("/IV/american", tags=['IV'])
+async def iv_american(params: VolatilityParameters = Depends()):
+    ...
+
+@app.get("/IV/european", tags=['IV'])
+async def iv_european(params: VolatilityParameters = Depends()):
+    ...
