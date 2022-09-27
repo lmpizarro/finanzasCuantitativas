@@ -35,3 +35,51 @@ def opcion_europea_mc(tipo, S, K, T, r, sigma, div, pasos):
     #var= np.var(opcion)
 
     return precio_MC
+
+
+def correlated_sampler(N, M, rho):
+    mu = np.array([0,0])
+    cov = np.array([[1,rho],
+                    [rho,1]])
+    Z = np.random.multivariate_normal(mu, cov, (N,M))
+
+    return Z
+
+
+def opcion_europea_mc_heston(tipo='C', S=400.38, K=400.38, T=1, r=0.0329, v0=0.043081, div=0.01, pasos=252):
+    """
+        v0 :    float - volatilidad inicial
+        pasos : int -   cantidad de pasos de tiempo
+        M :     int -   cantidad de simulaciones
+        rho :   float - correlacion de los procesos de wiener
+        theta : float - valor medio de la volatilidad
+        kappa : float - velocidad de retorno a la media
+        sigma : float - desvio estandard de la volatilidad
+    """
+
+    theta = 0.110948 
+    kappa = 1.658242 
+    sigma = 1.000000 
+    rho = -0.520333 
+
+    M = 40000             # cantidad de escenarios/simulaciones
+
+    dt = T/pasos
+
+    S = np.full(shape=(pasos+1,M), fill_value=S)
+    v = np.full(shape=(pasos+1,M), fill_value=v0)
+
+    Z = correlated_sampler(pasos, M, rho)
+
+    for i in range(1,pasos+1):
+        S[i] = S[i-1] * np.exp((r - div - 0.5*v[i-1])*dt + np.sqrt(v[i-1] * dt) * Z[i-1,:,0])
+        v[i] = np.maximum(v[i-1] + kappa*(theta-v[i-1])*dt + sigma*np.sqrt(v[i-1]*dt)*Z[i-1,:,1],0)
+
+    if tipo == 'C':
+        return np.exp(-r*T)*np.mean(np.maximum(S-K,0))
+    else:
+        return np.exp(-r*T)*np.mean(np.maximum(K-S,0))
+
+
+c = opcion_europea_mc_heston(tipo='C')
+print(c)
