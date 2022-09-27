@@ -62,24 +62,31 @@ def opcion_europea_mc_heston(tipo='C', S=400.38, K=400.38, T=1, r=0.0329, v0=0.0
     sigma = 1.000000 
     rho = -0.520333 
 
-    M = 40000             # cantidad de escenarios/simulaciones
+    if pasos > 500:
+        pasos = 500
+
+    M = pasos * 80           # cantidad de escenarios/simulaciones
 
     dt = T/pasos
 
-    S = np.full(shape=(pasos+1,M), fill_value=S)
+    __S = np.full(shape=(pasos+1,M), fill_value=S)
     v = np.full(shape=(pasos+1,M), fill_value=v0)
 
     Z = correlated_sampler(pasos, M, rho)
 
     for i in range(1,pasos+1):
-        S[i] = S[i-1] * np.exp((r - div - 0.5*v[i-1])*dt + np.sqrt(v[i-1] * dt) * Z[i-1,:,0])
+        __S[i] = __S[i-1] * np.exp((r - div - 0.5*v[i-1])*dt + np.sqrt(v[i-1] * dt) * Z[i-1,:,0])
         v[i] = np.maximum(v[i-1] + kappa*(theta-v[i-1])*dt + sigma*np.sqrt(v[i-1]*dt)*Z[i-1,:,1],0)
 
+    c = np.exp(-r*T)*np.mean(np.maximum(__S-K,0))
+    p = np.exp(-r*T)*np.mean(np.maximum(K-__S,0))
     if tipo == 'C':
-        return np.exp(-r*T)*np.mean(np.maximum(S-K,0))
+        return c
     else:
-        return np.exp(-r*T)*np.mean(np.maximum(K-S,0))
+        return p
 
 
-c = opcion_europea_mc_heston(tipo='C')
+c = opcion_europea_mc_heston(tipo='C', pasos=1000)
+print(c)
+c = opcion_europea_mc(tipo='C', S=400.38, K=400.38, T=1, r=0.0329, sigma=0.14, div=0.01, pasos=10000)
 print(c)
